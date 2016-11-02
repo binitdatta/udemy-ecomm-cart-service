@@ -2,6 +2,14 @@
 ### This fils is in Yaml format but you can also do this using the traditional
 ### Java properties file.
 
+server:
+  port: 8282
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/ 
+      
 spring.jmx:
    enabled: false
 
@@ -9,8 +17,6 @@ spring.datasource:
     driverClassName: org.h2.Driver
     url: jdbc:h2:mem:bootexample;MODE=MySQL
 
-server:
-  port: 8090
 
 #todo: make sure to always enable security in production
 security:

@@ -8,6 +8,7 @@ import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.rollingstone.dao.jpa.EcommShoppingCartRepository;
 import com.rollingstone.domain.ShoppingCart;
@@ -32,6 +33,7 @@ public class EcommShoppingCartService {
     public EcommShoppingCartService() {
     }
 
+    @Transactional
     public ShoppingCart createCart(ShoppingCart user) {
         return cartRepository.save(user);
     }
