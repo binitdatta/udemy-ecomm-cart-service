@@ -4,6 +4,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
+import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,46 +19,50 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rollingstone.domain.ShoppingCart;
+import com.rollingstone.domain.User;
 import com.rollingstone.exception.HTTP400Exception;
 import com.rollingstone.service.EcommShoppingCartService;
-//import com.wordnik.swagger.annotations.Api;
-//import com.wordnik.swagger.annotations.ApiOperation;
-//import com.wordnik.swagger.annotations.ApiParam;
+
 
 /*
  * Demonstrates how to set up RESTful API endpoints using Spring MVC
  */
-
+@EnableDiscoveryClient
 @RestController
+@EnableFeignClients
 @RequestMapping(value = "/shoppingcartservice/v1/cart")
-//@Api(value = "users", description = "User REST API")
 public class ShoppingCartController extends AbstractRestController {
 
     @Autowired
     private EcommShoppingCartService cartService;
+    
+    @Autowired
+    UserServiceClient userServiceClient;
 
     @RequestMapping(value = "",
-            method = RequestMethod.POST,
+            method = RequestMethod.POST, 
             consumes = {"application/json", "application/xml"},
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.CREATED)
-   // @ApiOperation(value = "Create a User resource.", notes = "Returns hotel the URL of the new resource in the Location header.")
     public void createUser(@RequestBody ShoppingCart cart,
                                  HttpServletRequest request, HttpServletResponse response) {
-        ShoppingCart createdCart = this.cartService.createCart(cart);
-        response.setHeader("Location", request.getRequestURL().append("/").append(createdCart.getId()).toString());
+        ShoppingCart createdCart;
+		try {
+			createdCart = this.cartService.createCart(cart);
+	        response.setHeader("Location", request.getRequestURL().append("/").append(createdCart.getId()).toString());
+
+		} catch (Exception e) {
+			response.setStatus(HttpStatus.BAD_REQUEST.value());
+		}
     }
 
     @RequestMapping(value = "",
             method = RequestMethod.GET,
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.OK)
-    //@ApiOperation(value = "Get a paginated list of all users.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 30)")
     public
     @ResponseBody
-    Page<ShoppingCart> getAllCarts(//@ApiParam(value = "The page number (zero-based)", required = true)
-                                      @RequestParam(value = "page", required = true, defaultValue = DEFAULT_PAGE_NUM) Integer page,
-                                      //@ApiParam(value = "Tha page size", required = true)
+    Page<ShoppingCart> getAllCarts(@RequestParam(value = "page", required = true, defaultValue = DEFAULT_PAGE_NUM) Integer page,
                                       @RequestParam(value = "size", required = true, defaultValue = DEFAULT_PAGE_SIZE) Integer size,
                                       HttpServletRequest request, HttpServletResponse response) {
         return this.cartService.getAllCarts(page, size);
@@ -65,11 +72,9 @@ public class ShoppingCartController extends AbstractRestController {
             method = RequestMethod.GET,
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.OK)
-    //@ApiOperation(value = "Get a single User.", notes = "You have to provide a valid User ID.")
     public
     @ResponseBody
-    ShoppingCart getCart(//@ApiParam(value = "The ID of the User.", required = true)
-                             @PathVariable("id") Long id,
+    ShoppingCart getCart(@PathVariable("id") Long id,
                              HttpServletRequest request, HttpServletResponse response) throws Exception {
         ShoppingCart user = this.cartService.getCart(id);
         checkResourceFound(user);
@@ -82,9 +87,7 @@ public class ShoppingCartController extends AbstractRestController {
             consumes = {"application/json", "application/xml"},
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    //@ApiOperation(value = "Update a User resource.", notes = "You have to provide a valid User ID in the URL and in the payload. The ID attribute can not be updated.")
-    public void updateUser(//@ApiParam(value = "The ID of the existing User resource.", required = true)
-                                 @PathVariable("id") Long id, @RequestBody ShoppingCart user,
+    public void updateUser(@PathVariable("id") Long id, @RequestBody ShoppingCart user,
                                  HttpServletRequest request, HttpServletResponse response) {
         checkResourceFound(this.cartService.getCart(id));
         if (id != user.getId()) throw new HTTP400Exception("ID doesn't match!");
@@ -96,11 +99,16 @@ public class ShoppingCartController extends AbstractRestController {
             method = RequestMethod.DELETE,
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    //@ApiOperation(value = "Delete a User resource.", notes = "You have to provide a valid User ID in the URL. Once deleted the resource can not be recovered.")
-    public void deleteUser(//@ApiParam(value = "The ID of the existing User resource.", required = true)
-                                 @PathVariable("id") Long id, HttpServletRequest request,
+    public void deleteUser(@PathVariable("id") Long id, HttpServletRequest request,
                                  HttpServletResponse response) {
         checkResourceFound(this.cartService.getCart(id));
         this.cartService.deleteCart(id);
+    }
+    
+    @FeignClient("user-service")
+    interface UserServiceClient {
+
+    	@RequestMapping(method = RequestMethod.GET, value="/userservice/v1/users")
+    	User getUser(@PathVariable("userId") String userId);
     }
 }

@@ -1,6 +1,5 @@
 package com.rollingstone.domain;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -21,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 @Table(name = "ecomm_cart_item")
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
+public
 class CartItem {
 
 	@Id

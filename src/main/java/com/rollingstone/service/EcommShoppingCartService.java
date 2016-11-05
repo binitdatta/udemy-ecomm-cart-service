@@ -11,8 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rollingstone.dao.jpa.EcommShoppingCartRepository;
-import com.rollingstone.domain.ShoppingCart;
+import com.rollingstone.domain.*;
 
+ 
 /*
  * Service class to do CRUD for User and Address through JPS Repository
  */
@@ -29,13 +30,58 @@ public class EcommShoppingCartService {
 
     @Autowired
     GaugeService gaugeService;
+    
+    @Autowired
+	private UserClient userClient;
+
+    @Autowired
+	private ProductClient productClient;
 
     public EcommShoppingCartService() {
     }
 
     @Transactional
-    public ShoppingCart createCart(ShoppingCart user) {
-        return cartRepository.save(user);
+    public ShoppingCart createCart(ShoppingCart cart) throws Exception {
+    	ShoppingCart shoppingCart = null;
+    	boolean areCartItemsValid = true;
+    	log.info("In service create");
+    	if (cart != null && cart.getUser() != null){
+    		log.info("In service create"+ cart.getUser().getId());
+    		if (userClient == null){
+        		log.info("In userServiceClient null got user");
+    		}
+    		else {
+    			log.info("In userServiceClient not null got user");
+    		}
+    		
+    		User user = userClient.getUser((new Long(cart.getUser().getId())));
+    		if (user != null){
+        		log.info("In service got user"+user.getId());
+				log.info("In Service size of cart :"+cart.getCartItems().size());
+
+        		for (CartItem cartItem : cart.getCartItems()){
+    				log.info("Inside cart loop");
+        			if (cartItem.getProduct() != null){
+        				log.info("In service Product is not null");
+        				Product product  = productClient.getProduct(new Long(cartItem.getProduct().getId())); 
+        				if (product == null){
+        	        		log.info("In service did not get product");
+        	        		areCartItemsValid = false;
+        				}else {
+        					log.info("In Service Valid product");
+        				}
+        			}else {
+        				log.info("In service Product is null");
+        			}
+        		}
+    			if (areCartItemsValid){
+    				shoppingCart = cartRepository.save(cart);
+    			}
+    		}else {
+    			throw new Exception("Invalid USer");
+    		}
+    	}
+        return shoppingCart;
     }
 
     public ShoppingCart getCart(long id) {
@@ -50,7 +96,6 @@ public class EcommShoppingCartService {
     	cartRepository.delete(id);
     }
 
-    //http://goo.gl/7fxvVf
     public Page<ShoppingCart> getAllCarts(Integer page, Integer size) {
         Page pageOfCarts = cartRepository.findAll(new PageRequest(page, size));
         // example of adding to the /metrics
@@ -59,4 +104,6 @@ public class EcommShoppingCartService {
         }
         return pageOfCarts;
     }
+    
+  
 }
